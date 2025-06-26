@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Bot 대시보드</title>
+
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Axios -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold mb-8 text-center">🤖 Discord Auto Bot</h1>
+        
+        <!-- 상태 카드 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold mb-2">봇 상태</h3>
+                <p class="text-2xl" id="bot-status">
+                    {% if is_running %}
+                        🟢 실행 중
+                    {% else %}
+                        🔴 중지됨
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold mb-2">자동 전송</h3>
+                <p class="text-2xl" id="auto-status">
+                    {% if is_enabled %}
+                        ✅ 활성화
+                    {% else %}
+                        ❌ 비활성화
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold mb-2">다음 전송</h3>
+                <p class="text-xl" id="next-send">
+                    {% if next_send_time %}
+                        {{ next_send_time.strftime('%H:%M:%S') }}
+                    {% else %}
+                        없음
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <!-- 제어 버튼 -->
+        <div class="flex flex-wrap gap-4 mb-8 justify-center">
+            <button onclick="controlBot('start')" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg">
+                🚀 봇 시작
+            </button>
+            <button onclick="controlBot('stop')" class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg">
+                ⏹️ 봇 중지
+            </button>
+            <button onclick="controlBot('send_now')" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg">
+                📨 즉시 전송
+            </button>
+            <a href="/config" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg inline-block">
+                ⚙️ 설정
+            </a>
+        </div>
+        
+        <!-- 현재 설정 -->
+        <div class="bg-gray-800 p-6 rounded-lg mb-8">
+            <h3 class="text-xl font-semibold mb-4">현재 설정</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-gray-400">채널 ID:</p>
+                    <p class="font-mono">{{ config.channel_id }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400">전송 간격:</p>
+                    <p>{{ config.send_interval }}초 ({{ config.send_interval // 60 }}분)</p>
+                </div>
+                <div>
+                    <p class="text-gray-400">이미지:</p>
+                    <p>{{ config.image_path or '없음' }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400">메시지 길이:</p>
+                    <p>{{ config.message_content|length }}자</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 실시간 로그 -->
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold">📋 실시간 로그</h3>
+                <div class="space-x-2">
+                    <select id="log-lines" class="bg-gray-700 text-white px-3 py-1 rounded" onchange="loadLogs()">
+                        <option value="20">최근 20줄</option>
+                        <option value="50" selected>최근 50줄</option>
+                        <option value="100">최근 100줄</option>
+                        <option value="200">최근 200줄</option>
+                    </select>
+                    <button onclick="loadLogs()" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">
+                        🔄 새로고침
+                    </button>
+                </div>
+            </div>
+            
+            <div id="log-container" class="bg-gray-900 p-4 rounded-lg h-64 overflow-y-auto font-mono text-sm">
+                <div class="text-gray-500">로그를 불러오는 중...</div>
+            </div>
+            
+            <div class="mt-2 text-sm text-gray-400" id="log-info"></div>
+        </div>
+    </div>
+    
+    <script>
+        // HTML 이스케이프
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 로그 불러오기
+        async function loadLogs() {
+            try {
+                const lines = document.getElementById('log-lines').value;
+                const response = await axios.get(`/api/logs?lines=${lines}`);
+                const data = response.data;
+                const container = document.getElementById('log-container');
+                const info = document.getElementById('log-info');
+
+                if (data.logs && data.logs.length) {
+                    container.innerHTML = data.logs.map(log => {
+                        let color = 'text-gray-300';
+                        if (log.includes('ERROR')) color = 'text-red-400';
+                        else if (log.includes('WARNING')) color = 'text-yellow-400';
+                        else if (log.includes('INFO')) color = 'text-blue-400';
+                        return `<div class="${color}">${escapeHtml(log)}</div>`;
+                    }).join('');
+                    info.textContent = `총 ${data.total_lines}줄 중 최근 ${data.shown_lines}줄 표시`;
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = '<div class="text-gray-500">로그가 없습니다.</div>';
+                    info.textContent = '';
+                }
+            } catch (err) {
+                console.error('로그 로드 오류:', err);
+                document.getElementById('log-container').innerHTML =
+                    '<div class="text-red-400">로그 로드에 실패했습니다.</div>';
+            }
+        }
+
+        // 봇 제어 API 호출
+        async function controlBot(action) {
+            try {
+                // 버튼 비활성화
+                const buttons = document.querySelectorAll('button');
+                buttons.forEach(btn => btn.disabled = true);
+                
+                // 즉시 UI 업데이트 (낙관적 업데이트)
+                if (action === 'start') {
+                    updateBotStatus('🟡 시작 중...', 'text-yellow-400');
+                } else if (action === 'stop') {
+                    updateBotStatus('🟡 중지 중...', 'text-yellow-400');
+                }
+                
+                const res = await axios.post(`/api/bot/${action}`);
+                
+                // 성공 메시지 표시
+                if (res.data.success) {
+                    // 1초 후 상태 강제 업데이트
+                    setTimeout(updateStatus, 1000);
+                }
+                
+                alert(res.data.message);
+                
+            } catch (err) {
+                alert('오류가 발생했습니다: ' + err.message);
+            } finally {
+                // 버튼 다시 활성화
+                const buttons = document.querySelectorAll('button');
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+        
+        // 봇 상태 UI 업데이트 헬퍼 함수
+        function updateBotStatus(text, className) {
+            const botEl = document.getElementById('bot-status');
+            botEl.textContent = text;
+            botEl.className = `text-2xl ${className}`;
+        }
+
+        // 전역 변수로 다음 전송 시간 저장
+        let nextSendTime = null;
+        let currentServerTime = null;
+        let localTimeOffset = 0;
+
+        // 실시간 카운트다운 업데이트
+        function updateCountdown() {
+            const nextEl = document.getElementById('next-send');
+            
+            if (nextSendTime) {
+                const now = new Date(Date.now() + localTimeOffset);
+                const next = new Date(nextSendTime);
+                const diff = Math.max(0, Math.floor((next - now) / 1000));
+                
+                if (diff > 0) {
+                    const minutes = Math.floor(diff / 60);
+                    const seconds = diff % 60;
+                    nextEl.textContent = `${minutes}분 ${seconds}초 후`;
+                    nextEl.className = 'text-xl text-blue-400';
+                } else {
+                    nextEl.textContent = '곧 전송';
+                    nextEl.className = 'text-xl text-green-400';
+                }
+            } else {
+                nextEl.textContent = '없음';
+                nextEl.className = 'text-xl text-gray-400';
+            }
+        }
+
+        // 상태 업데이트 함수
+        async function updateStatus() {
+            try {
+                const { data: status } = await axios.get('/api/status');
+                const botEl = document.getElementById('bot-status');
+                const autoEl = document.getElementById('auto-status');
+
+                // 봇 상태
+                if (status.is_connected && status.is_running) {
+                    updateBotStatus('🟢 실행 중', 'text-green-400');
+                } else if (status.is_connected) {
+                    updateBotStatus('🟡 연결됨', 'text-yellow-400');
+                } else {
+                    updateBotStatus('🔴 중지됨', 'text-red-400');
+                }
+
+                // 자동 전송 상태
+                autoEl.textContent = status.is_enabled ? '✅ 활성화' : '❌ 비활성화';
+                autoEl.className = status.is_enabled ? 'text-2xl text-green-400' : 'text-2xl text-red-400';
+
+                // 다음 전송 시간 업데이트
+                if (status.next_send_time && status.is_running) {
+                    nextSendTime = status.next_send_time;
+                    currentServerTime = status.current_time;
+                    // 서버 시간과 로컬 시간의 차이 계산
+                    localTimeOffset = new Date(currentServerTime) - new Date();
+                } else {
+                    nextSendTime = null;
+                }
+                
+                // 즉시 카운트다운 업데이트
+                updateCountdown();
+                
+            } catch (err) {
+                console.error('상태 업데이트 오류:', err);
+            }
+        }
+
+        // 상태 자동 업데이트 (3초 간격으로 더 빠르게)
+        setInterval(updateStatus, 3000);
+        
+        // 카운트다운 실시간 업데이트 (1초마다)
+        setInterval(updateCountdown, 1000);
+
+        // 초기 로드
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLogs();
+            updateStatus(); // 즉시 상태 업데이트
+            setInterval(loadLogs, 10000); // 10초마다 로그 자동 새로고침 (더 빠르게)
+        });
+    </script>
+</body>
+</html>

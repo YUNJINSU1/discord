@@ -1,5 +1,53 @@
 # 환경 변수 파일 (토큰 등 민감한 정보 포함)
+# Environment variables
 .env
+config/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs
+logs/
+*.log
+
+# Config with sensitive data
+config/bot_config.json
+
+# Assets (images may be large)
+assets/images/*
+!assets/images/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
 
 # Python 캐시 파일
 __pycache__/

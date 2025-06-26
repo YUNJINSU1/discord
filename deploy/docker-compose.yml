@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  discord-bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: discord-auto-bot
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../assets:/app/assets:ro
+      - ../config:/app/config
+      - ../logs:/app/logs
+    environment:
+      - USER_TOKEN=${USER_TOKEN}
+      - CHANNEL_ID=${CHANNEL_ID:-1191577280095461388}
+      - SEND_INTERVAL=${SEND_INTERVAL:-1800}
+      - WEB_PORT=8080
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+    env_file:
+      - ../config/.env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    name: discord-bot-network
