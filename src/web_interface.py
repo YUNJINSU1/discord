@@ -7,7 +7,6 @@ import logging
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import mimetypes
-import ipaddress
 from functools import wraps
 from flask import Response
 from src.config import BotConfig
@@ -25,43 +24,6 @@ class HealthCheckFilter(logging.Filter):
         return True
 
 # 보안 관련 함수들
-def get_client_ip():
-    """클라이언트 IP 주소 가져오기 (프록시 고려)"""
-    if request.headers.get('X-Forwarded-For'):
-        # 프록시를 통한 접근 시 (Google Cloud Load Balancer 등)
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    elif request.headers.get('X-Real-IP'):
-        return request.headers.get('X-Real-IP')
-    else:
-        return request.remote_addr
-
-def is_ip_allowed(client_ip):
-    """IP 화이트리스트 체크"""
-    allowed_ips = os.getenv('ALLOWED_IPS', '0.0.0.0/0').split(',')
-    
-    # 빈 설정이면 모든 IP 허용 (개발 모드)
-    if not allowed_ips or allowed_ips == ['']:
-        return True
-    
-    for allowed_ip in allowed_ips:
-        allowed_ip = allowed_ip.strip()
-        if not allowed_ip:
-            continue
-            
-        try:
-            # CIDR 표기법 지원 (예: 192.168.1.0/24)
-            if '/' in allowed_ip:
-                if ipaddress.ip_address(client_ip) in ipaddress.ip_network(allowed_ip, strict=False):
-                    return True
-            # 정확한 IP 매치
-            elif client_ip == allowed_ip:
-                return True
-        except ValueError:
-            # IP 형식이 잘못된 경우 무시
-            continue
-    
-    return False
-
 def check_basic_auth():
     """Basic Auth 체크"""
     auth = request.authorization
@@ -73,31 +35,11 @@ def check_basic_auth():
     return False
 
 def require_auth(f):
-    """인증 데코레이터"""
+    """인증 데코레이터 - Railway 배포용 (IP 제한 없음)"""
     @wraps(f)
     def decorated(*args, **kwargs):
-        client_ip = get_client_ip()
-        
-        # 1단계: IP 화이트리스트 체크
-        if not is_ip_allowed(client_ip):
-            # 보안 로그 기록
-            logging.warning(f"❌ 차단된 IP 접근 시도: {client_ip} - {request.endpoint}")
-            return Response(
-                '🚫 접근이 거부되었습니다.\n허용되지 않은 IP 주소입니다.',
-                401,
-                {'Content-Type': 'text/plain; charset=utf-8'}
-            )
-        
-        # 2단계: Basic Auth 체크
+        # Basic Auth 체크만 수행
         if not check_basic_auth():
-            # 성공한 IP 로그 (첫 로그인 시에만)
-            if 'logged_ips' not in globals():
-                globals()['logged_ips'] = set()
-            
-            if client_ip not in globals()['logged_ips']:
-                logging.info(f"✅ 허용된 IP 접근: {client_ip}")
-                globals()['logged_ips'].add(client_ip)
-            
             return Response(
                 '🔐 인증이 필요합니다',
                 401,
@@ -106,17 +48,6 @@ def require_auth(f):
                     'Content-Type': 'text/plain; charset=utf-8'
                 }
             )
-        
-        # 인증 성공 로그 (세션당 1회)
-        auth = request.authorization
-        session_key = f"{client_ip}_{auth.username}" if auth else client_ip
-        if 'auth_sessions' not in globals():
-            globals()['auth_sessions'] = set()
-            
-        if session_key not in globals()['auth_sessions']:
-            username = auth.username if auth else 'unknown'
-            logging.info(f"🎉 로그인 성공: {username}@{client_ip}")
-            globals()['auth_sessions'].add(session_key)
         
         return f(*args, **kwargs)
     return decorated
