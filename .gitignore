@@ -1,6 +1,7 @@
 # 환경 변수 파일 (토큰 등 민감한 정보 포함)
 # Environment variables
 .env
+.env.*
 config/.env
 
 # Python
