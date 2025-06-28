@@ -33,8 +33,6 @@ def main():
     parser = argparse.ArgumentParser(description='Discord Auto Bot')
     parser.add_argument('--mode', choices=['bot', 'web', 'both'], default='both',
                       help='실행 모드 선택')
-    parser.add_argument('--config', default='config/bot_config.json',
-                      help='설정 파일 경로')
     parser.add_argument('--web-port', type=int, default=8080,
                       help='웹 인터페이스 포트')
     parser.add_argument('--debug', action='store_true',
@@ -46,10 +44,15 @@ def main():
     setup_logging(logging.DEBUG if args.debug else logging.INFO)
     logger = logging.getLogger(__name__)
     
-    # 설정 파일 로드
-    config = BotConfig.from_file(args.config)
+    # 설정 로드 - PostgreSQL 우선, 실패시 환경변수
+    logger.info("설정을 로드하는 중...")
+    config = BotConfig.load()
     if not config.validate():
         logger.error("설정이 유효하지 않습니다. 설정을 확인해주세요.")
+        logger.error("Railway 대시보드에서 환경 변수를 설정한 후 재배포해주세요!")
+        logger.info("60초 후 재시도합니다...")
+        import time
+        time.sleep(60)
         return 1
     
     try:

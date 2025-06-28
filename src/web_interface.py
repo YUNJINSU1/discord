@@ -143,7 +143,8 @@ class WebInterface:
         werkzeug_logger.addFilter(HealthCheckFilter())
         
         self.config_file = config_file
-        self.config = BotConfig.from_file(config_file)
+        # PostgreSQL 기반 설정 로드
+        self.config = BotConfig.load()
         self.bot = None
         self.bot_thread = None
         
@@ -167,7 +168,7 @@ class WebInterface:
         @self.app.route('/config', methods=['GET', 'POST'])
         @require_auth
         def config_page():
-            """설정 페이지"""
+            """설정 페이지 - PostgreSQL 기반"""
             if request.method == 'POST':
                 # 설정 업데이트
                 data = request.form.to_dict()
@@ -183,28 +184,24 @@ class WebInterface:
                 if 'image_path' in data and data['image_path'].strip() == '':
                     data['image_path'] = None
                 
-                # 설정 업데이트
-                old_config = {
-                    'channel_id': self.config.channel_id,
-                    'send_interval': self.config.send_interval,
-                    'message_content': self.config.message_content,
-                    'image_path': self.config.image_path,
-                    'is_enabled': self.config.is_enabled
-                }
+                # PostgreSQL에 설정 저장
+                success = self.config.update(**data)
                 
-                self.config.update(**data)
-                self.config.save_to_file(self.config_file)
-                
-                # 실행 중인 봇에 설정 적용
-                if self.bot and hasattr(self.bot, '_loop') and self.bot._loop:
-                    try:
-                        future = asyncio.run_coroutine_threadsafe(
-                            self.bot.update_config(**data),
-                            self.bot._loop
-                        )
-                        future.result(timeout=5)  # 5초 타임아웃
-                    except Exception as e:
-                        print(f"봇 설정 업데이트 오류: {e}")
+                if success:
+                    logging.info("설정이 데이터베이스에 저장되었습니다.")
+                    
+                    # 실행 중인 봇에 설정 적용
+                    if self.bot and hasattr(self.bot, '_loop') and self.bot._loop:
+                        try:
+                            future = asyncio.run_coroutine_threadsafe(
+                                self.bot.update_config(**data),
+                                self.bot._loop
+                            )
+                            future.result(timeout=5)  # 5초 타임아웃
+                        except Exception as e:
+                            logging.error(f"봇 설정 업데이트 오류: {e}")
+                else:
+                    logging.error("설정 저장에 실패했습니다.")
                 
                 return redirect(url_for('dashboard'))
             

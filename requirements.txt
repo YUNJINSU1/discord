@@ -4,3 +4,5 @@ asyncio
 Pillow
 Flask
 Werkzeug
+psycopg2-binary
+sqlalchemy
