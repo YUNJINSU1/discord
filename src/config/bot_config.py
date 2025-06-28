@@ -63,10 +63,24 @@ class BotConfig:
         """환경 변수에서 설정 로드 (fallback)"""
         load_dotenv()
         
+        # 기본 안내 메시지
+        default_message = """
+🤖 Discord 자동 메시지 봇이 실행 중입니다!
+
+✅ Railway에서 PostgreSQL 없이도 동작합니다
+⚙️ 웹 인터페이스에서 모든 설정을 변경할 수 있습니다
+🔧 환경변수 설정이 필요합니다:
+
+1. USER_TOKEN = Discord 봇 토큰
+2. CHANNEL_ID = 메시지를 보낼 채널 ID
+
+웹 관리 페이지: https://your-app.railway.app/config
+        """.strip()
+        
         return cls(
             user_token=os.getenv("USER_TOKEN", ""),
             channel_id=os.getenv("CHANNEL_ID", ""),
-            message_content=os.getenv("MESSAGE_CONTENT", "🤖 환경변수 기반 메시지입니다!"),
+            message_content=os.getenv("MESSAGE_CONTENT", default_message),
             send_interval=int(os.getenv("SEND_INTERVAL", "1800")),
             image_path=os.getenv("IMAGE_PATH"),
             is_enabled=os.getenv("IS_ENABLED", "true").lower() == "true",
@@ -122,20 +136,32 @@ class BotConfig:
         return True
     
     def validate(self) -> bool:
-        """설정 유효성 검사"""
+        """설정 유효성 검사 - 더 관대한 검증"""
+        missing_settings = []
+        
         if not self.user_token or self.user_token == "":
-            logging.error("필수 설정이 없습니다: user_token")
-            logging.error("Railway 대시보드에서 USER_TOKEN 환경 변수를 설정해주세요!")
-            return False
+            missing_settings.append("USER_TOKEN (Discord 봇 토큰)")
             
         if not self.channel_id or self.channel_id == "":
-            logging.error("필수 설정이 없습니다: channel_id") 
-            logging.error("Railway 대시보드에서 CHANNEL_ID 환경 변수를 설정해주세요!")
-            return False
+            missing_settings.append("CHANNEL_ID (메시지를 보낼 채널 ID)")
                 
         # 토큰 기본값 체크
         if self.user_token in ["YOUR_DISCORD_BOT_TOKEN_HERE", "***"]:
-            logging.error("유효한 Discord 토큰이 설정되지 않았습니다.")
+            missing_settings.append("USER_TOKEN (유효한 Discord 토큰)")
+        
+        if missing_settings:
+            logging.error("🚨 필수 환경변수가 설정되지 않았습니다:")
+            for setting in missing_settings:
+                logging.error(f"   ❌ {setting}")
+            logging.error("")
+            logging.error("📋 Railway 배포 가이드:")
+            logging.error("1. Railway 대시보드 → Variables 탭")
+            logging.error("2. 다음 환경변수 추가:")
+            logging.error("   USER_TOKEN=your_discord_bot_token")
+            logging.error("   CHANNEL_ID=your_channel_id")
+            logging.error("3. 설정 후 자동 재배포됩니다")
+            logging.error("")
+            logging.error("🌐 웹 인터페이스: https://your-app.railway.app")
             return False
             
         if not self.message_content:

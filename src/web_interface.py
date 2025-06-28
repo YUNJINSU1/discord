@@ -124,7 +124,7 @@ def require_auth(f):
 class WebInterface:
     """웹 관리 인터페이스"""
     
-    def __init__(self, config_file: str = "config/bot_config.json"):
+    def __init__(self, config: BotConfig = None):
         # 현재 파일 위치에서 프로젝트 루트 찾기
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(current_dir)
@@ -142,9 +142,8 @@ class WebInterface:
         werkzeug_logger = logging.getLogger('werkzeug')
         werkzeug_logger.addFilter(HealthCheckFilter())
         
-        self.config_file = config_file
-        # PostgreSQL 기반 설정 로드
-        self.config = BotConfig.load()
+        # 설정 로드 - 전달받은 config 우선, 없으면 새로 로드
+        self.config = config if config else BotConfig.load()
         self.bot = None
         self.bot_thread = None
         

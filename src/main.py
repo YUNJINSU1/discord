@@ -68,33 +68,47 @@ def main():
     logger.info("설정을 로드하는 중...")
     config = BotConfig.load()
     
-    if not config.validate():
-        logger.error("❌ 설정이 유효하지 않습니다!")
-        logger.error("🔧 필요한 환경변수:")
-        logger.error("   USER_TOKEN=your_discord_bot_token (필수)")
-        logger.error("   CHANNEL_ID=your_channel_id (선택, 웹에서 설정 가능)")
-        logger.info("60초 후 재시도합니다...")
-        import time
-        time.sleep(60)
-        return main()  # 재귀 호출로 재시도
+    # 설정 검증 - 모드에 따라 다르게 처리
+    if args.mode == 'bot':
+        # 봇 전용 모드: 반드시 유효한 설정 필요
+        if not config.validate():
+            logger.error("❌ 봇 실행을 위한 설정이 유효하지 않습니다!")
+            logger.info("60초 후 재시도합니다...")
+            import time
+            time.sleep(60)
+            return main()  # 재귀 호출로 재시도
+    elif args.mode == 'web':
+        # 웹 전용 모드: 설정 없어도 실행 (웹에서 설정 가능)
+        logger.info("웹 전용 모드: 설정이 없어도 웹 인터페이스를 시작합니다")
+    else:  # both
+        # 통합 모드: 웹은 항상 시작, 봇은 설정이 있을 때만
+        if not config.validate():
+            logger.warning("⚠️ Discord 봇 설정이 불완전하지만 웹 인터페이스는 시작합니다")
+            logger.info("웹 인터페이스에서 설정을 완료할 수 있습니다: /config")
+    
+    # 실행 모드별 처리
     
     try:
         if args.mode == 'web':
             # 웹 인터페이스만 실행
             logger.info("웹 인터페이스 모드로 시작합니다")
-            web = WebInterface(args.config)
+            web = WebInterface(config)
             web.run(port=args.web_port, debug=args.debug)
         
         elif args.mode == 'bot':
-            # 봇만 실행
-            logger.info("봇 전용 모드로 시작합니다")
-            bot = DiscordAutoBot(config)
-            bot.run(config.user_token)
+            # 봇만 실행  
+            if config.validate():
+                logger.info("봇 전용 모드로 시작합니다")
+                bot = DiscordAutoBot(config)
+                bot.run(config.user_token)
+            else:
+                logger.error("봇 설정이 유효하지 않아 시작할 수 없습니다")
+                return
         
         else:  # both
             # 웹 인터페이스 + 봇 (기본값)
             logger.info("통합 모드로 시작합니다 (웹 + 봇)")
-            web = WebInterface(args.config)
+            web = WebInterface(config)
             web.run(port=args.web_port, debug=args.debug)
     
     except KeyboardInterrupt:
