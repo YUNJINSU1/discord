@@ -37,7 +37,7 @@ def get_client_ip():
 
 def is_ip_allowed(client_ip):
     """IP 화이트리스트 체크"""
-    allowed_ips = os.getenv('ALLOWED_IPS', '').split(',')
+    allowed_ips = os.getenv('ALLOWED_IPS', '0.0.0.0/0').split(',')
     
     # 빈 설정이면 모든 IP 허용 (개발 모드)
     if not allowed_ips or allowed_ips == ['']:
