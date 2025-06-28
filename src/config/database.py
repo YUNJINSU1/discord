@@ -30,16 +30,24 @@ class DatabaseManager:
             # Railway PostgreSQL은 보통 DATABASE_URL로 제공됨
             logging.error("DATABASE_URL 환경변수가 설정되지 않았습니다!")
             return
+        
+        logging.info(f"DATABASE_URL 환경변수가 설정되어 있습니다.")
             
         # SQLAlchemy 엔진 생성
-        self.engine = create_engine(self.database_url)
-        self.SessionLocal = sessionmaker(bind=self.engine)
-        
-        # 테이블 생성
-        self.init_database()
-        
-        # 기본 설정 값들 초기화
-        self.init_default_settings()
+        try:
+            self.engine = create_engine(self.database_url)
+            self.SessionLocal = sessionmaker(bind=self.engine)
+            
+            # 테이블 생성
+            self.init_database()
+            
+            # 기본 설정 값들 초기화
+            self.init_default_settings()
+            
+            logging.info("PostgreSQL 데이터베이스 연결 성공!")
+        except Exception as e:
+            logging.error(f"데이터베이스 연결 실패: {e}")
+            self.database_url = None  # 연결 실패시 None으로 설정
     
     def init_database(self):
         """데이터베이스 및 테이블 초기화"""

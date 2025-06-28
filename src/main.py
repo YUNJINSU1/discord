@@ -44,16 +44,39 @@ def main():
     setup_logging(logging.DEBUG if args.debug else logging.INFO)
     logger = logging.getLogger(__name__)
     
-    # 설정 로드 - PostgreSQL 우선, 실패시 환경변수
-    logger.info("설정을 로드하는 중...")
-    config = BotConfig.load()
-    if not config.validate():
-        logger.error("설정이 유효하지 않습니다. 설정을 확인해주세요.")
-        logger.error("Railway 대시보드에서 환경 변수를 설정한 후 재배포해주세요!")
+    # 환경변수 체크
+    logger.info("환경 변수를 확인하는 중...")
+    user_token = os.getenv("USER_TOKEN")
+    database_url = os.getenv("DATABASE_URL")
+    
+    if not user_token:
+        logger.error("❌ USER_TOKEN 환경변수가 설정되지 않았습니다!")
+        logger.error("🔧 Railway 대시보드에서 다음 환경변수를 설정해주세요:")
+        logger.error("   USER_TOKEN=your_discord_bot_token")
+        logger.error("   (선택) DATABASE_URL=postgresql://... (PostgreSQL 서비스 추가시 자동생성)")
         logger.info("60초 후 재시도합니다...")
         import time
         time.sleep(60)
-        return 1
+        return main()  # 재귀 호출로 재시도
+    
+    if database_url:
+        logger.info("✅ DATABASE_URL이 설정되어 있습니다. PostgreSQL 모드로 동작합니다.")
+    else:
+        logger.warning("⚠️ DATABASE_URL이 없습니다. 환경변수 모드로 동작합니다.")
+    
+    # 설정 로드 - PostgreSQL 우선, 실패시 환경변수
+    logger.info("설정을 로드하는 중...")
+    config = BotConfig.load()
+    
+    if not config.validate():
+        logger.error("❌ 설정이 유효하지 않습니다!")
+        logger.error("🔧 필요한 환경변수:")
+        logger.error("   USER_TOKEN=your_discord_bot_token (필수)")
+        logger.error("   CHANNEL_ID=your_channel_id (선택, 웹에서 설정 가능)")
+        logger.info("60초 후 재시도합니다...")
+        import time
+        time.sleep(60)
+        return main()  # 재귀 호출로 재시도
     
     try:
         if args.mode == 'web':
