@@ -6,3 +6,4 @@ Flask
 Werkzeug
 psycopg2-binary
 sqlalchemy
+gunicorn

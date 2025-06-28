@@ -58,20 +58,16 @@ class DatabaseManager:
             logging.error(f"데이터베이스 초기화 오류: {e}")
     
     def init_default_settings(self):
-        """기본 설정값들 초기화"""
+        """기본 설정값들 초기화 - 보안에 민감하지 않은 설정만 DB에 저장"""
         default_settings = {
-            'user_token': {
-                'value': os.getenv('USER_TOKEN', ''),
-                'type': 'str',
-                'description': 'Discord 봇 토큰'
-            },
+            # 사용자 설정 (DB 관리)
             'channel_id': {
-                'value': os.getenv('CHANNEL_ID', ''),
+                'value': os.getenv('CHANNEL_ID', '1191577280095461388'),
                 'type': 'str', 
                 'description': '메시지를 보낼 채널 ID'
             },
             'message_content': {
-                'value': os.getenv('MESSAGE_CONTENT', '🤖 PostgreSQL에서 관리되는 자동 메시지입니다!'),
+                'value': os.getenv('MESSAGE_CONTENT', '🚀 PostgreSQL로 관리되는 Discord 봇 메시지입니다!'),
                 'type': 'str',
                 'description': '전송할 메시지 내용'
             },
@@ -85,21 +81,18 @@ class DatabaseManager:
                 'type': 'bool',
                 'description': '봇 활성화 여부'
             },
-            'admin_username': {
-                'value': os.getenv('ADMIN_USERNAME', 'admin'),
+            'image_path': {
+                'value': os.getenv('IMAGE_PATH', 'assets/images/sell.png'),
                 'type': 'str',
-                'description': '웹 관리자 사용자명'
-            },
-            'admin_password': {
-                'value': os.getenv('ADMIN_PASSWORD', 'admin123'),
-                'type': 'str',
-                'description': '웹 관리자 비밀번호'
+                'description': '첨부할 이미지 파일 경로'
             },
             'web_port': {
                 'value': os.getenv('PORT', '8080'),
                 'type': 'int',
                 'description': '웹 인터페이스 포트'
             }
+            # 보안 민감 정보는 환경변수로만 관리:
+            # USER_TOKEN, ADMIN_USERNAME, ADMIN_PASSWORD
         }
         
         with self.SessionLocal() as session:

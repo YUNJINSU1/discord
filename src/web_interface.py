@@ -14,12 +14,16 @@ from src.bot import DiscordAutoBot
 
 # Flask 로깅 필터 설정
 class HealthCheckFilter(logging.Filter):
-    """헬스체크 요청을 로그에서 제외하는 필터"""
+    """헬스체크 및 정적 파일 요청을 로그에서 제외하는 필터"""
     def filter(self, record):
-        # /api/status, /api/logs 요청은 로그에서 제외
         if hasattr(record, 'getMessage'):
             message = record.getMessage()
-            if any(endpoint in message for endpoint in ['/api/status', '/api/logs']):
+            # Railway 헬스체크 및 불필요한 요청 제외
+            excluded_endpoints = [
+                '/api/status', '/api/logs', '/favicon.ico', 
+                'GET /health', 'HEAD /', '404'
+            ]
+            if any(endpoint in message for endpoint in excluded_endpoints):
                 return False
         return True
 
@@ -82,6 +86,11 @@ class WebInterface:
     
     def _setup_routes(self):
         """라우트 설정"""
+        
+        @self.app.route('/health')
+        def health_check():
+            """Railway 헬스체크 엔드포인트"""
+            return {'status': 'healthy', 'timestamp': datetime.now().isoformat()}, 200
         
         @self.app.route('/')
         @require_auth

@@ -15,15 +15,15 @@ COPY config/ config/
 COPY assets/ assets/
 
 # 포트 노출
-EXPOSE 8080
+EXPOSE $PORT
 
 # 환경 변수 설정
 ENV PYTHONPATH=/app
-ENV PORT=8080
+ENV PYTHONUNBUFFERED=1
 
-# 헬스체크
+# Railway 헬스체크
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:${PORT}/health || exit 1
 
-# 애플리케이션 실행
+# 애플리케이션 실행 (Railway에서 PORT 환경변수 제공)
 CMD ["python", "-m", "src.main"]

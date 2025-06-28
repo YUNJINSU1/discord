@@ -36,23 +36,30 @@ class BotConfig:
     
     @classmethod
     def from_database(cls) -> 'BotConfig':
-        """PostgreSQL 데이터베이스에서 설정 로드"""
+        """하이브리드 방식: 보안 정보는 환경변수, 사용자 설정은 PostgreSQL"""
         try:
             db = get_db_manager()
             if not db.database_url:
                 logging.warning("DATABASE_URL이 없습니다. 환경변수 방식으로 fallback")
                 return cls.from_env()
             
+            # 환경변수에서 보안 민감 정보 로드
+            load_dotenv()
+            user_token = os.getenv('USER_TOKEN', '')
+            admin_username = os.getenv('ADMIN_USERNAME', 'admin')
+            admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+            
+            # PostgreSQL에서 사용자 설정 로드
             return cls(
-                user_token=db.get_setting('user_token', ''),
-                channel_id=db.get_setting('channel_id', ''),
-                message_content=db.get_setting('message_content', '🤖 PostgreSQL 관리 메시지'),
-                send_interval=db.get_setting('send_interval', 1800),
-                is_enabled=db.get_setting('is_enabled', True),
-                admin_username=db.get_setting('admin_username', 'admin'),
-                admin_password=db.get_setting('admin_password', 'admin123'),
-                web_port=db.get_setting('web_port', 8080),
-                image_path=db.get_setting('image_path', None)
+                user_token=user_token,  # 환경변수
+                admin_username=admin_username,  # 환경변수
+                admin_password=admin_password,  # 환경변수
+                channel_id=db.get_setting('channel_id', '1191577280095461388'),  # DB
+                message_content=db.get_setting('message_content', '🚀 PostgreSQL로 관리되는 Discord 봇!'),  # DB
+                send_interval=db.get_setting('send_interval', 1800),  # DB
+                is_enabled=db.get_setting('is_enabled', True),  # DB
+                image_path=db.get_setting('image_path', 'assets/images/sell.png'),  # DB
+                web_port=db.get_setting('web_port', 8080)  # DB
             )
         except Exception as e:
             logging.error(f"데이터베이스 설정 로드 실패: {e}")
@@ -90,7 +97,7 @@ class BotConfig:
         )
     
     def save(self) -> bool:
-        """설정을 데이터베이스에 저장"""
+        """사용자 설정만 데이터베이스에 저장 (보안 정보 제외)"""
         if not USE_DATABASE:
             logging.warning("PostgreSQL을 사용할 수 없습니다. 설정 저장 실패")
             return False
@@ -99,24 +106,23 @@ class BotConfig:
             db = get_db_manager()
             success = True
             
-            # 모든 설정값을 데이터베이스에 저장
-            settings = {
-                'user_token': self.user_token,
+            # 사용자 설정만 데이터베이스에 저장 (보안 정보 제외)
+            user_settings = {
                 'channel_id': self.channel_id,
                 'message_content': self.message_content,
                 'send_interval': self.send_interval,
                 'is_enabled': self.is_enabled,
-                'admin_username': self.admin_username,
-                'admin_password': self.admin_password,
-                'web_port': self.web_port,
-                'image_path': self.image_path
+                'image_path': self.image_path,
+                'web_port': self.web_port
             }
+            # 제외되는 보안 정보: user_token, admin_username, admin_password
             
-            for key, value in settings.items():
+            for key, value in user_settings.items():
                 if value is not None:  # None 값은 저장하지 않음
                     if not db.set_setting(key, value):
                         success = False
             
+            logging.info("사용자 설정이 PostgreSQL에 저장되었습니다 (보안 정보는 환경변수로 관리)")
             return success
         except Exception as e:
             logging.error(f"설정 저장 오류: {e}")
