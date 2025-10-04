@@ -1,59 +1,110 @@
-# 환경 변수 파일 (토큰 등 민감한 정보 포함)
+# ==============================================
+# Discord Bot Monorepo - .gitignore
+# ==============================================
+
+# 환경 변수 파일 (민감한 정보 포함)
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 config/.env
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# ==============================================
+# 백엔드 (Python)
+# ==============================================
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/*.so
+backend/.Python
+backend/build/
+backend/develop-eggs/
+backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
 
-# Logs
+# Python 가상환경
+backend/venv/
+backend/env/
+backend/ENV/
+
+# ==============================================
+# 프론트엔드 (Next.js)
+# ==============================================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.nuxt/
+frontend/dist/
+
+# 프론트엔드 로그
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# Vercel
+frontend/.vercel
+
+# ==============================================
+# 공통
+# ==============================================
+# 루트 node_modules (모노레포용)
+node_modules/
+
+# 로그 파일
 logs/
 *.log
 nohup.out
 
 # Config with sensitive data
-config/bot_config.json
+backend/config.json
 
-# Assets (images may be large)
-assets/images/*
-!assets/images/.gitkeep
+# 업로드된 이미지들 (용량이 클 수 있음)
+shared/assets/images/*
+!shared/assets/images/.gitkeep
 
-# IDE
+# IDE 및 에디터
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-workspace
+*.sublime-project
 
-# OS
+# OS 생성 파일
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-
-# Docker
-.dockerignore
-
-# 가상환경
-venv/
-env/
-ENV/
 
 # 임시 파일
 *.tmp
 *.temp
+.cache/
+
+# 테스트 커버리지
+coverage/
+.nyc_output/
+.coverage
+
+# Railway
+.railway/
+
+# Docker (개발용, 프로덕션 Dockerfile은 포함)
+docker-compose.override.yml

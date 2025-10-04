@@ -1,0 +1,6 @@
+discord.py-self
+python-dotenv
+Pillow
+Flask
+Werkzeug
+gunicorn

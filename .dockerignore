@@ -1,0 +1,62 @@
+# Git 관련
+.git
+.gitignore
+
+# Node.js
+frontend/node_modules/
+frontend/.next/
+frontend/.env*
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Python
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.Python
+backend/env/
+backend/venv/
+backend/.venv/
+backend/.pytest_cache/
+
+# 개발 도구
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 로그
+*.log
+logs/
+
+# 환경 변수 (로컬만)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 임시 파일
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Railway 관련
+.railway/
+
+# 테스트
+coverage/
+.nyc_output/
+
+# 문서
+README.md
+docs/
+*.md
+!RAILWAY_DEPLOY_GUIDE.md

@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Flask 백엔드 서버
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - USER_TOKEN=${USER_TOKEN}
+      - CHANNEL_ID=${CHANNEL_ID}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-password}
+      - FLASK_ENV=development
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - ./shared:/app/shared
+    networks:
+      - bot-network
+    restart: unless-stopped
+
+  # Next.js 프론트엔드
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:5000
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - bot-network
+    restart: unless-stopped
+
+networks:
+  bot-network:
+    driver: bridge
+
+volumes:
+  node_modules:

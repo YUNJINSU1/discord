@@ -1,9 +1,0 @@
-discord.py-self
-python-dotenv
-asyncio
-Pillow
-Flask
-Werkzeug
-psycopg2-binary
-sqlalchemy
-gunicorn
