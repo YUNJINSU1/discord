@@ -271,7 +271,10 @@ class WebInterface:
                         pass
                 
                 # 새 이미지 저장 (고정된 파일명 사용)
-                images_dir = "assets/images"
+                # Docker: /app/assets/images, Local: backend/../assets/images
+                current_dir = os.path.dirname(os.path.abspath(__file__))  # /app/src
+                project_root = os.path.dirname(current_dir)  # /app
+                images_dir = os.path.join(project_root, "assets", "images")
                 os.makedirs(images_dir, exist_ok=True)
                 
                 # 항상 같은 파일명으로 저장 (확장자만 유지)
@@ -298,14 +301,21 @@ class WebInterface:
             """이미지 파일 서빙 (인증 불필요 - 이미지는 공개)"""
             try:
                 # 현재 설정된 이미지만 서빙
-                if not self.config.image_path or not os.path.exists(self.config.image_path):
-                    return jsonify({'error': '이미지를 찾을 수 없습니다'}), 404
+                if not self.config.image_path:
+                    print(f"⚠️ 이미지 경로 미설정: config.image_path={self.config.image_path}")
+                    return jsonify({'error': '이미지가 설정되지 않았습니다'}), 404
+                
+                if not os.path.exists(self.config.image_path):
+                    print(f"❌ 이미지 파일 없음: {self.config.image_path}")
+                    return jsonify({'error': f'이미지를 찾을 수 없습니다: {self.config.image_path}'}), 404
                 
                 # 파일명 확인 (보안)
                 config_filename = os.path.basename(self.config.image_path)
                 if filename != config_filename:
+                    print(f"⚠️ 파일명 불일치: 요청={filename}, 설정={config_filename}")
                     return jsonify({'error': '잘못된 이미지 요청입니다'}), 400
                 
+                print(f"✅ 이미지 서빙: {self.config.image_path}")
                 # 이미지 파일 서빙
                 return send_file(
                     self.config.image_path,
@@ -313,7 +323,9 @@ class WebInterface:
                 )
                 
             except Exception as e:
-                print(f"이미지 서빙 오류: {e}")  # 디버깅용
+                print(f"❌ 이미지 서빙 오류: {e}")
+                import traceback
+                traceback.print_exc()
                 return jsonify({'error': str(e)}), 500
         
         @self.app.route('/api/images/delete', methods=['DELETE'])
