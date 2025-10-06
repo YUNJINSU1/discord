@@ -48,24 +48,14 @@ class WebInterface:
         project_root = os.path.dirname(current_dir)
         template_dir = os.path.join(project_root, 'web', 'templates')
         static_dir = os.path.join(project_root, 'web', 'static')
-        frontend_static_dir = os.path.join(project_root, 'frontend', 'out')
-        dashboard_static_dir = os.path.join(project_root, 'discord-bot-dashboard', 'out')
         
-        print(f"Templates directory: {template_dir}")  # 디버깅용
-        print(f"Templates exist: {os.path.exists(template_dir)}")
+        print(f"✅ Templates directory: {template_dir}")
+        print(f"✅ Templates exist: {os.path.exists(template_dir)}")
         
         self.app = Flask(__name__, 
                         template_folder=template_dir,
                         static_folder=static_dir,
                         static_url_path='/static')
-        
-        # 프론트엔드 정적 파일 서빙을 위한 추가 static 폴더 등록
-        self.app.add_url_rule('/frontend/<path:filename>', 
-                            endpoint='frontend_static', 
-                            view_func=self._serve_frontend_static)
-        self.app.add_url_rule('/dashboard/<path:filename>', 
-                            endpoint='dashboard_static', 
-                            view_func=self._serve_dashboard_static)
         
         # 설정 로드 - 전달받은 config 우선, 없으면 새로 로드
         self.config = config if config else BotConfig.load()
@@ -244,13 +234,21 @@ class WebInterface:
                 if ext not in allowed_extensions:
                     return jsonify({'success': False, 'message': f'지원하지 않는 파일 형식입니다. 지원 형식: {", ".join(allowed_extensions)}'})
                 
-                # 파일 크기 검사 (10MB 제한)
-                file.seek(0, 2)  # 파일 끝으로 이동
-                file_size = file.tell()
-                file.seek(0)  # 파일 시작으로 돌아가기
+                # 파일 크기 검사 (10MB 제한) - 스트리밍 방식
+                chunk_size = 8192  # 8KB 청크
+                file_size = 0
+                max_size = 10 * 1024 * 1024  # 10MB
                 
-                if file_size > 10 * 1024 * 1024:  # 10MB
-                    return jsonify({'success': False, 'message': '파일 크기가 10MB를 초과했습니다'})
+                # 청크 단위로 읽으며 크기 계산
+                while True:
+                    chunk = file.read(chunk_size)
+                    if not chunk:
+                        break
+                    file_size += len(chunk)
+                    if file_size > max_size:
+                        return jsonify({'success': False, 'message': '파일 크기가 10MB를 초과했습니다'})
+                
+                file.seek(0)  # 파일 시작으로 돌아가기
                 
                 # 기존 이미지 삭제
                 if self.config.image_path and os.path.exists(self.config.image_path):
@@ -321,33 +319,6 @@ class WebInterface:
                 
             except Exception as e:
                 return jsonify({'success': False, 'message': f'삭제 실패: {str(e)}'})
-        
-        # 프론트엔드 SPA 서빙
-        @self.app.route('/frontend')
-        @self.app.route('/frontend/<path:path>')
-        def serve_frontend(path=''):
-            """프론트엔드 SPA 서빙"""
-            try:
-                frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend', 'out')
-                if path and os.path.exists(os.path.join(frontend_dir, path)):
-                    return send_from_directory(frontend_dir, path)
-                else:
-                    return send_from_directory(frontend_dir, 'index.html')
-            except Exception as e:
-                return f"Frontend not found: {str(e)}", 404
-        
-        @self.app.route('/dashboard')
-        @self.app.route('/dashboard/<path:path>')
-        def serve_dashboard(path=''):
-            """대시보드 SPA 서빙"""
-            try:
-                dashboard_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'discord-bot-dashboard', 'out')
-                if path and os.path.exists(os.path.join(dashboard_dir, path)):
-                    return send_from_directory(dashboard_dir, path)
-                else:
-                    return send_from_directory(dashboard_dir, 'index.html')
-            except Exception as e:
-                return f"Dashboard not found: {str(e)}", 404
         """봇 시작"""
         if self.bot_thread and self.bot_thread.is_alive():
             return
@@ -403,22 +374,6 @@ class WebInterface:
                 pass
             finally:
                 self.bot = None
-    
-    def _serve_frontend_static(self, filename):
-        """프론트엔드 정적 파일 서빙"""
-        try:
-            frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend', 'out')
-            return send_from_directory(frontend_dir, filename)
-        except FileNotFoundError:
-            return jsonify({'error': 'File not found'}), 404
-    
-    def _serve_dashboard_static(self, filename):
-        """대시보드 정적 파일 서빙"""
-        try:
-            dashboard_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'discord-bot-dashboard', 'out')
-            return send_from_directory(dashboard_dir, filename)
-        except FileNotFoundError:
-            return jsonify({'error': 'File not found'}), 404
     
     def run(self, host='0.0.0.0', port=8080, debug=False):
         """웹 서버 실행"""

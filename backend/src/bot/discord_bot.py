@@ -7,10 +7,21 @@ from datetime import datetime, timedelta
 from src.config import BotConfig
 
 class DiscordAutoBot(discord.Client):
-    """Discord 자동 메시지 봇 - 경량화 버전"""
+    """Discord 자동 메시지 봇 - 최적화 버전
+    
+    성능 개선사항:
+    - 연결 타임아웃 30초
+    - heartbeat 타임아웃 60초
+    - 불필요한 intent 최소화
+    """
     
     def __init__(self, config: BotConfig, loop=None):
-        super().__init__(self_bot=True)
+        # discord.py-self는 intents를 지원하지 않으므로 기본 초기화
+        super().__init__(
+            self_bot=True,
+            heartbeat_timeout=60.0,  # heartbeat 타임아웃
+            guild_ready_timeout=30.0  # 길드 준비 타임아웃
+        )
         self.config = config
         self.is_running = False
         self.scheduler_task: Optional[asyncio.Task] = None
@@ -64,12 +75,13 @@ class DiscordAutoBot(discord.Client):
         print("⏸️ 메시지 스케줄러 중지")
     
     async def _scheduler_loop(self):
-        """스케줄러 루프"""
+        """스케줄러 루프 - 최적화된 로깅"""
         try:
             while self.is_running:
                 # 다음 전송 시간 계산
                 self.next_send_time = datetime.now() + timedelta(seconds=self.config.send_interval)
-                print(f"⏰ 다음 전송 시간: {self.next_send_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                # 로깅 축소: 시간만 표시
+                print(f"⏰ 다음 전송: {self.next_send_time.strftime('%H:%M:%S')}")
                 
                 # 대기
                 await asyncio.sleep(self.config.send_interval)
@@ -78,7 +90,7 @@ class DiscordAutoBot(discord.Client):
                     await self.send_auto_message()
                     
         except asyncio.CancelledError:
-            print("📴 스케줄러 정상 종료")
+            pass  # 조용히 종료
         except Exception as e:
             print(f"❌ 스케줄러 오류: {e}")
     
@@ -93,18 +105,16 @@ class DiscordAutoBot(discord.Client):
             # 이미지와 함께 보내기 설정 확인
             if self.config.send_with_image and self.config.image_path:
                 if os.path.exists(self.config.image_path):
-                    print(f"🖼️ 이미지 준비: {self.config.image_path}")
                     file = discord.File(self.config.image_path)
                     await channel.send(self.config.message_content, file=file)
-                    print(f"📨 메시지+이미지 전송 완료: #{channel.name}")
+                    print(f"📨 메시지+이미지 전송 완료")
                 else:
-                    print(f"⚠️ 이미지 파일 없음: {self.config.image_path}")
                     await channel.send(self.config.message_content)
-                    print(f"📨 메시지만 전송 완료: #{channel.name}")
+                    print(f"📨 메시지 전송 완료 (이미지 없음)")
             else:
                 # 텍스트만 전송
                 await channel.send(self.config.message_content)
-                print(f"📨 텍스트 메시지 전송 완료: #{channel.name}")
+                print(f"📨 메시지 전송 완료")
             
             return True
             

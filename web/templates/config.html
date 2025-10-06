@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Bot 설정</title>
+
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-6">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">⚙️ 봇 설정</h1>
+            <a href="/" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded">← 대시보드로</a>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <form method="POST" action="/config">
+                <div class="space-y-4">
+                    <!-- 채널 ID -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">채널 ID</label>
+                        <input type="text" name="channel_id" value="{{ config.channel_id }}" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                               required>
+                    </div>
+                    
+                    <!-- 전송 간격 -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">전송 간격 (초)</label>
+                        <input type="number" name="send_interval_seconds" value="{{ config.send_interval_seconds }}" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                               min="60" required>
+                        <p class="text-sm text-gray-400 mt-1">현재: {{ (config.send_interval_seconds / 60) | int }}분</p>
+                    </div>
+                    
+                    <!-- 메시지 설정 -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">메시지 목록 (한 줄에 하나씩)</label>
+                        <textarea name="messages" rows="6" 
+                                  class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                                  required>{{ config.messages | join('\n') }}</textarea>
+                    </div>
+                    
+                    <!-- 활성화 여부 -->
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_enabled" value="true" 
+                                   {% if config.is_enabled %}checked{% endif %}
+                                   class="mr-2">
+                            <span>자동 전송 활성화</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 이미지 전송 여부 -->
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="send_with_image" value="true" 
+                                   {% if config.send_with_image %}checked{% endif %}
+                                   class="mr-2">
+                            <span>이미지와 함께 전송</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 저장 버튼 -->
+                    <div class="pt-4">
+                        <button type="submit" 
+                                class="w-full bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded font-semibold">
+                            💾 설정 저장
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="mt-6 text-center text-gray-400">
+            <p class="text-sm">설정 파일 위치: config/config.json</p>
+        </div>
+    </div>
+</body>
+</html>

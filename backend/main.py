@@ -34,26 +34,28 @@ def main():
     print("🤖 Discord Auto Bot Backend 시작")
     print("=" * 50)
     
-    # 환경변수 체크 (웹 모드에서는 선택사항)
-    print("환경 변수를 확인하는 중...")
-    user_token = os.getenv("USER_TOKEN")
-    
-    if not user_token and args.mode in ['bot', 'both']:
-        print("❌ USER_TOKEN 환경변수가 설정되지 않았습니다!")
-        print("🔧 다음 환경변수를 설정해주세요:")
-        print("   USER_TOKEN=your_discord_user_token")
-        print("   CHANNEL_ID=your_channel_id")
-        
-        print("60초 후 재시도합니다...")
-        time.sleep(60)
-        return main()
-    elif user_token:
-        print("✅ USER_TOKEN이 설정되어 있습니다.")
-    else:
-        print("ℹ️ 웹 모드로 실행합니다 (Discord 토큰 없음)")
-    
     try:
+        # 설정 로드 (여기서 .env 파일이 로드됨)
+        print("설정을 로드하는 중...")
         config = BotConfig.load()
+        
+        # 환경변수 체크 (웹 모드에서는 선택사항)
+        print("환경 변수를 확인하는 중...")
+        user_token = config.user_token
+        
+        if not user_token and args.mode in ['bot', 'both']:
+            print("❌ USER_TOKEN 환경변수가 설정되지 않았습니다!")
+            print("🔧 다음 환경변수를 설정해주세요:")
+            print("   USER_TOKEN=your_discord_user_token")
+            print("   CHANNEL_ID=your_channel_id")
+            
+            print("60초 후 재시도합니다...")
+            time.sleep(60)
+            return main()
+        elif user_token:
+            print("✅ USER_TOKEN이 설정되어 있습니다.")
+        else:
+            print("ℹ️ 웹 모드로 실행합니다 (Discord 토큰 없음)")
         
         if args.mode == 'web':
             # 웹 인터페이스만 실행

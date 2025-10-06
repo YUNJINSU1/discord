@@ -26,7 +26,15 @@ class BotConfig:
     @classmethod
     def from_env(cls) -> 'BotConfig':
         """환경 변수에서 설정 로드"""
-        load_dotenv()
+        # 프로젝트 루트의 .env 파일 로드
+        from pathlib import Path
+        env_path = Path(__file__).parent.parent.parent.parent / '.env'
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ .env 파일 로드 완료: {env_path}")
+        else:
+            print(f"⚠️ .env 파일을 찾을 수 없습니다: {env_path}")
+            load_dotenv(override=True)  # 현재 디렉토리에서 찾기
         
         # JSON 파일에서 사용자 설정 로드 시도
         config_path = "config.json"
