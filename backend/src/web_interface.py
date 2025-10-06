@@ -44,15 +44,26 @@ class WebInterface:
     
     def __init__(self, config: BotConfig = None):
         # 현재 파일 위치에서 프로젝트 루트 찾기
-        # backend/src/web_interface.py -> backend/src -> backend -> 프로젝트 루트
-        current_dir = os.path.dirname(os.path.abspath(__file__))  # backend/src
-        backend_dir = os.path.dirname(current_dir)  # backend
-        project_root = os.path.dirname(backend_dir)  # 프로젝트 루트
-        template_dir = os.path.join(project_root, 'web', 'templates')
-        static_dir = os.path.join(project_root, 'web', 'static')
+        # Docker: /app/src/web_interface.py -> /app/src -> /app
+        # Local: backend/src/web_interface.py -> backend/src -> backend -> 프로젝트 루트
+        current_dir = os.path.dirname(os.path.abspath(__file__))  # .../src
+        project_root = os.path.dirname(current_dir)  # /app (Docker) 또는 backend (Local)
+        
+        # Docker에서는 /app/web/templates, Local에서는 backend/../web/templates
+        if os.path.exists(os.path.join(project_root, 'web', 'templates')):
+            # Docker 경로 또는 올바른 경로
+            template_dir = os.path.join(project_root, 'web', 'templates')
+            static_dir = os.path.join(project_root, 'web', 'static')
+        else:
+            # Local 개발 환경 - backend에서 한 단계 위로
+            parent_dir = os.path.dirname(project_root)
+            template_dir = os.path.join(parent_dir, 'web', 'templates')
+            static_dir = os.path.join(parent_dir, 'web', 'static')
         
         print(f"✅ Templates directory: {template_dir}")
         print(f"✅ Templates exist: {os.path.exists(template_dir)}")
+        if os.path.exists(template_dir):
+            print(f"✅ Template files: {os.listdir(template_dir)}")
         
         self.app = Flask(__name__, 
                         template_folder=template_dir,
