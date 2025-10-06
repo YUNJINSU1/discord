@@ -1,0 +1,9 @@
+{
+  "channel_id": "1191577280095461388",
+  "message_content": "gdgdgdgd",
+  "send_interval": 60,
+  "is_enabled": true,
+  "image_path": "assets/images\\bot_image.jpg",
+  "send_with_image": true,
+  "web_port": 8080
+}

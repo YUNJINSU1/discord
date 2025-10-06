@@ -113,11 +113,12 @@
                         {% if config.send_with_image and config.image_path %}
                         <div class="mt-2">
                             <div class="text-sm text-gray-400 mb-1">📷 첨부된 이미지:</div>
-                            <img src="/api/images/{{ config.image_path.split('/')[-1] }}" 
+                            {% set filename = config.image_path.replace('\\', '/').split('/')[-1] %}
+                            <img src="/api/images/{{ filename }}" 
                                  alt="봇 이미지" class="max-w-xs max-h-48 rounded"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                             <div class="text-sm text-gray-400" style="display: none;">
-                                이미지 로드 실패: {{ config.image_path }}
+                                이미지 로드 실패
                             </div>
                         </div>
                         {% endif %}

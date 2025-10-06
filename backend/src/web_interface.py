@@ -44,8 +44,10 @@ class WebInterface:
     
     def __init__(self, config: BotConfig = None):
         # 현재 파일 위치에서 프로젝트 루트 찾기
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(current_dir)
+        # backend/src/web_interface.py -> backend/src -> backend -> 프로젝트 루트
+        current_dir = os.path.dirname(os.path.abspath(__file__))  # backend/src
+        backend_dir = os.path.dirname(current_dir)  # backend
+        project_root = os.path.dirname(backend_dir)  # 프로젝트 루트
         template_dir = os.path.join(project_root, 'web', 'templates')
         static_dir = os.path.join(project_root, 'web', 'static')
         
