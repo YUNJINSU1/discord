@@ -126,68 +126,9 @@
                 </div>
             </div>
         </div>
-        <!-- 로그 섹션 -->
-        <div class="bg-gray-800 p-6 rounded-lg mt-8">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-semibold">📋 시스템 로그</h3>
-                <div class="flex items-center space-x-2">
-                    <select id="log-lines" class="bg-gray-700 text-white px-3 py-1 rounded">
-                        <option value="50">최근 50줄</option>
-                        <option value="100">최근 100줄</option>
-                        <option value="200">최근 200줄</option>
-                    </select>
-                    <button onclick="loadLogs()" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">
-                        🔄 새로고침
-                    </button>
-                </div>
-            </div>
-            
-            <div id="log-container" class="bg-gray-900 p-4 rounded-lg h-64 overflow-y-auto font-mono text-sm">
-                <div class="text-gray-500">로그를 불러오는 중...</div>
-            </div>
-            
-            <div class="mt-2 text-sm text-gray-400" id="log-info"></div>
-        </div>
     </div>
     
     <script>
-        // HTML 이스케이프
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // 로그 불러오기
-        async function loadLogs() {
-            try {
-                const lines = document.getElementById('log-lines').value;
-                const response = await axios.get(`/api/logs?lines=${lines}`);
-                const data = response.data;
-                const container = document.getElementById('log-container');
-                const info = document.getElementById('log-info');
-
-                if (data.logs && data.logs.length) {
-                    container.innerHTML = data.logs.map(log => {
-                        let color = 'text-gray-300';
-                        if (log.includes('ERROR')) color = 'text-red-400';
-                        else if (log.includes('WARNING')) color = 'text-yellow-400';
-                        else if (log.includes('INFO')) color = 'text-blue-400';
-                        return `<div class="${color}">${escapeHtml(log)}</div>`;
-                    }).join('');
-                    info.textContent = `총 ${data.total_lines}줄 중 최근 ${data.shown_lines}줄 표시`;
-                    container.scrollTop = container.scrollHeight;
-                } else {
-                    container.innerHTML = '<div class="text-gray-500">로그가 없습니다.</div>';
-                    info.textContent = '';
-                }
-            } catch (err) {
-                console.error('로그 로드 오류:', err);
-                document.getElementById('log-container').innerHTML =
-                    '<div class="text-red-400">로그 로드에 실패했습니다.</div>';
-            }
-        }
-
         // 봇 제어 API 호출
         async function controlBot(action) {
             try {

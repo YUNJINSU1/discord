@@ -202,12 +202,6 @@ class WebInterface:
             }
             return jsonify(status)
         
-        @self.app.route('/api/logs')
-        @require_auth
-        def get_logs():
-            """로그 조회 API - 제거됨"""
-            return jsonify({'logs': [], 'message': '로깅 기능이 제거되었습니다'})
-        
         @self.app.route('/api/images')
         @require_auth
         def list_images():
