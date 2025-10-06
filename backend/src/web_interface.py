@@ -342,6 +342,8 @@ class WebInterface:
                 
             except Exception as e:
                 return jsonify({'success': False, 'message': f'삭제 실패: {str(e)}'})
+    
+    def _start_bot(self):
         """봇 시작"""
         if self.bot_thread and self.bot_thread.is_alive():
             return
