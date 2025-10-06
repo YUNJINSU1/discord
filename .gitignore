@@ -40,30 +40,8 @@ backend/env/
 backend/ENV/
 
 # ==============================================
-# 프론트엔드 (Next.js)
-# ==============================================
-frontend/node_modules/
-frontend/.next/
-frontend/out/
-frontend/build/
-frontend/.nuxt/
-frontend/dist/
-
-# 프론트엔드 로그
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/.pnpm-debug.log*
-
-# Vercel
-frontend/.vercel
-
-# ==============================================
 # 공통
 # ==============================================
-# 루트 node_modules (모노레포용)
-node_modules/
-
 # 로그 파일
 logs/
 *.log
@@ -73,8 +51,8 @@ nohup.out
 backend/config.json
 
 # 업로드된 이미지들 (용량이 클 수 있음)
-shared/assets/images/*
-!shared/assets/images/.gitkeep
+assets/images/*
+!assets/images/.gitkeep
 
 # IDE 및 에디터
 .vscode/
