@@ -294,19 +294,23 @@ class WebInterface:
                 return jsonify({'success': False, 'message': f'업로드 실패: {str(e)}'})
         
         @self.app.route('/api/images/<filename>')
-        @require_auth
         def serve_image(filename):
-            """이미지 파일 서빙"""
+            """이미지 파일 서빙 (인증 불필요 - 이미지는 공개)"""
             try:
                 # 현재 설정된 이미지만 서빙
                 if not self.config.image_path or not os.path.exists(self.config.image_path):
                     return jsonify({'error': '이미지를 찾을 수 없습니다'}), 404
                 
                 # 파일명 확인 (보안)
-                if filename != os.path.basename(self.config.image_path):
+                config_filename = os.path.basename(self.config.image_path)
+                if filename != config_filename:
                     return jsonify({'error': '잘못된 이미지 요청입니다'}), 400
                 
-                return send_file(self.config.image_path)
+                # 이미지 파일 서빙
+                return send_file(
+                    self.config.image_path,
+                    mimetype=f'image/{os.path.splitext(filename)[1][1:]}'  # .png -> image/png
+                )
                 
             except Exception as e:
                 print(f"이미지 서빙 오류: {e}")  # 디버깅용
