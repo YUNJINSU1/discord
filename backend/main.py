@@ -43,7 +43,8 @@ def main():
         print("환경 변수를 확인하는 중...")
         user_token = config.user_token
         
-        if not user_token and args.mode in ['bot', 'both']:
+        if not user_token and args.mode == 'bot':
+            # 봇 전용 모드에서는 토큰이 필수
             print("❌ USER_TOKEN 환경변수가 설정되지 않았습니다!")
             print("🔧 다음 환경변수를 설정해주세요:")
             print("   USER_TOKEN=your_discord_user_token")
@@ -55,7 +56,7 @@ def main():
         elif user_token:
             print("✅ USER_TOKEN이 설정되어 있습니다.")
         else:
-            print("ℹ️ 웹 모드로 실행합니다 (Discord 토큰 없음)")
+            print("⚠️ USER_TOKEN이 없습니다. 웹 서버만 시작합니다.")
         
         if args.mode == 'web':
             # 웹 인터페이스만 실행
@@ -77,20 +78,25 @@ def main():
             # 봇과 웹 인터페이스 동시 실행
             print("🚀 봇과 웹 인터페이스를 모두 시작합니다...")
             
+            # 웹 인터페이스를 먼저 초기화 (healthcheck를 위해)
+            print(f"🌐 웹 인터페이스를 {args.web_port}번 포트에서 시작합니다...")
+            web_interface = WebInterface(config)
+            
             # 봇을 별도 스레드에서 실행
             def run_bot():
                 if user_token:
+                    print("🤖 Discord 봇을 시작합니다...")
                     bot = DiscordAutoBot(config)
                     asyncio.run(bot.start(user_token))
                 else:
-                    print("⚠️ USER_TOKEN이 없어 봇을 시작할 수 없습니다.")
+                    print("⚠️ USER_TOKEN이 없어 Discord 봇을 시작할 수 없습니다.")
+                    print("💡 웹 인터페이스만 실행됩니다.")
             
+            # 봇 스레드 시작 (daemon=True로 웹 서버 종료 시 함께 종료)
             bot_thread = threading.Thread(target=run_bot, daemon=True)
             bot_thread.start()
             
-            # 웹 인터페이스 실행
-            print(f"🌐 웹 인터페이스를 {args.web_port}번 포트에서 시작합니다...")
-            web_interface = WebInterface(config)
+            # 웹 서버 실행 (메인 스레드에서)
             web_interface.run(host='0.0.0.0', port=args.web_port, debug=False)
             
     except KeyboardInterrupt:
