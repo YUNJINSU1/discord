@@ -27,11 +27,13 @@ EXPOSE 8080
 # 환경 변수 설정
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+
+# 포트 기본값 (Railway에서 자동으로 덮어씀)
 ENV PORT=8080
 
-# 헬스체크
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# 헬스체크 - Railway가 시작 시간을 더 주도록 수정
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:${PORT}/health || exit 1
 
-# 백엔드 실행
-CMD python main.py --mode web --web-port ${PORT}
+# 백엔드 실행 - Railway의 startCommand가 이것을 덮어씀
+CMD ["python", "main.py", "--mode", "both", "--web-port", "8080"]
