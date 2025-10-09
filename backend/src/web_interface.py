@@ -94,6 +94,11 @@ class WebInterface:
                 # 설정 업데이트
                 data = request.form.to_dict()
                 
+                # 채널 ID 리스트 처리
+                channel_ids = request.form.getlist('channel_ids[]')
+                # 빈 값 필터링 및 공백 제거
+                data['channel_ids'] = [cid.strip() for cid in channel_ids if cid.strip()]
+                
                 # 숫자 타입 변환
                 if 'send_interval' in data:
                     data['send_interval'] = int(data['send_interval'])

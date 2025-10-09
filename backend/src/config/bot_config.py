@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, asdict
 from dotenv import load_dotenv
 
@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 class BotConfig:
     """봇 설정을 관리하는 데이터 클래스 - 경량화된 JSON 파일 기반"""
     user_token: str
-    channel_id: str
+    channel_ids: List[str]
     message_content: str
     send_interval: int = 1800  # 30분
     image_path: Optional[str] = None
@@ -62,7 +62,7 @@ class BotConfig:
         
         return cls(
             user_token=os.getenv("USER_TOKEN", ""),
-            channel_id=saved_config.get("channel_id", os.getenv("CHANNEL_ID", "")),
+            channel_ids=saved_config.get("channel_ids", [os.getenv("CHANNEL_ID", "")] if os.getenv("CHANNEL_ID") else []),
             message_content=saved_config.get("message_content", os.getenv("MESSAGE_CONTENT", default_message)),
             send_interval=saved_config.get("send_interval", int(os.getenv("SEND_INTERVAL", "1800"))),
             image_path=saved_config.get("image_path", os.getenv("IMAGE_PATH")),
@@ -78,7 +78,7 @@ class BotConfig:
         try:
             # 보안 정보를 제외한 사용자 설정만 저장
             user_settings = {
-                'channel_id': self.channel_id,
+                'channel_ids': self.channel_ids,
                 'message_content': self.message_content,
                 'send_interval': self.send_interval,
                 'is_enabled': self.is_enabled,
@@ -114,7 +114,7 @@ class BotConfig:
         if not self.user_token or self.user_token == "":
             missing_settings.append("USER_TOKEN (Discord 사용자 토큰)")
             
-        if not self.channel_id or self.channel_id == "":
+        if not self.channel_ids or len(self.channel_ids) == 0 or all(cid == "" for cid in self.channel_ids):
             missing_settings.append("CHANNEL_ID (메시지를 보낼 채널 ID)")
                 
         # 토큰 기본값 체크

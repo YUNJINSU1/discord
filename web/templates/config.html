@@ -17,13 +17,20 @@
         
         <div class="bg-gray-800 p-6 rounded-lg">
             <form method="POST" action="/config">
+                <!-- 채널 데이터 (JavaScript에서 사용) -->
+                <div id="channels-data" data-channels='{{ config.channel_ids|tojson }}' style="display: none;"></div>
+                
                 <div class="space-y-4">
-                    <!-- 채널 ID -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">채널 ID</label>
-                        <input type="text" name="channel_id" value="{{ config.channel_id }}" 
-                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                               required>
+                    <!-- 채널 ID들 -->
+                    <div id="channels-section">
+                        <label class="block text-sm font-medium mb-2">📢 전송 채널들</label>
+                        <div id="channels-container">
+                            <!-- 동적으로 채널 입력 필드들 생성 -->
+                        </div>
+                        <button type="button" onclick="addChannel()" 
+                                class="mt-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">
+                            ➕ 채널 추가
+                        </button>
                     </div>
                     
                     <!-- 전송 간격 -->
@@ -134,6 +141,59 @@
     </div>
     
     <script>
+        // 채널 관리 함수들
+        function addChannel(channelId = '') {
+            const container = document.getElementById('channels-container');
+            const channelDiv = document.createElement('div');
+            channelDiv.className = 'channel-input flex items-center mb-2';
+            
+            channelDiv.innerHTML = `
+                <span class="channel-number mr-2 text-gray-400">#${container.children.length + 1}</span>
+                <input type="text" name="channel_ids[]" value="${channelId}" 
+                       class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white mr-2"
+                       placeholder="채널 ID 입력" required>
+                <button type="button" onclick="removeChannel(this)" 
+                        class="bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-sm">
+                    ×
+                </button>
+            `;
+            
+            container.appendChild(channelDiv);
+            updateChannelNumbers();
+        }
+        
+        function removeChannel(button) {
+            const container = document.getElementById('channels-container');
+            if (container.children.length > 1) {  // 최소 1개 유지
+                button.parentElement.remove();
+                updateChannelNumbers();
+            } else {
+                alert('최소 1개의 채널은 유지해야 합니다.');
+            }
+        }
+        
+        function updateChannelNumbers() {
+            const channels = document.querySelectorAll('.channel-number');
+            channels.forEach((span, index) => {
+                span.textContent = `#${index + 1}`;
+            });
+        }
+        
+        // 초기 채널 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            // 백엔드에서 전달받은 채널들 (HTML data 속성에서 읽기)
+            const channelIds = JSON.parse(document.getElementById('channels-data').dataset.channels || '[]');
+            
+            channelIds.forEach(channelId => {
+                addChannel(channelId);
+            });
+            
+            // 기본적으로 1개 채널이 없다면 추가
+            if (document.querySelectorAll('.channel-input').length === 0) {
+                addChannel();
+            }
+        });
+        
         // 이미지 업로드
         document.getElementById('upload-form').addEventListener('submit', async (e) => {
             e.preventDefault();
