@@ -26,7 +26,7 @@ class DiscordAutoBot(discord.Client):
         self.is_running = False
         self.scheduler_task: Optional[asyncio.Task] = None
         self.next_send_time: Optional[datetime] = None
-        self._loop = loop or asyncio.get_event_loop()
+        self._loop = loop  # 이벤트 루프는 나중에 설정
         
     async def on_ready(self):
         """봇이 준비되었을 때 실행"""
@@ -34,13 +34,28 @@ class DiscordAutoBot(discord.Client):
         print(f'📅 계정 생성일: {self.user.created_at}')
         
         # 채널 확인
-        channel = self.get_channel(int(self.config.channel_id))
-        if not channel:
-            print(f"❌ 채널 ID {self.config.channel_id}를 찾을 수 없습니다.")
+        valid_channels = []
+        for i, channel_id_str in enumerate(self.config.channel_ids):
+            if not channel_id_str or channel_id_str.strip() == "":
+                continue
+                
+            try:
+                channel_id = int(channel_id_str)
+                channel = self.get_channel(channel_id)
+                if channel:
+                    valid_channels.append(channel)
+                    print(f"📨 채널 #{i+1}: #{channel.name} (서버: {channel.guild.name}) - ✅ 유효")
+                else:
+                    print(f"📨 채널 #{i+1}: ID {channel_id} - ❌ 찾을 수 없음")
+            except ValueError:
+                print(f"📨 채널 #{i+1}: {channel_id_str} - ❌ 잘못된 ID 형식")
+        
+        if not valid_channels:
+            print("❌ 유효한 채널이 하나도 없습니다. 봇을 종료합니다.")
             await self.close()
             return
         
-        print(f"📨 전송 채널: #{channel.name} (서버: {channel.guild.name})")
+        print(f"� 총 {len(valid_channels)}/{len(self.config.channel_ids)} 채널이 유효합니다")
         print(f"⏰ 전송 간격: {self.config.send_interval}초 ({self.config.send_interval//60}분)")
         print(f"🎛️ 봇 상태: {'활성화' if self.config.is_enabled else '비활성화'}")
         print(f"🖼️ 이미지 설정: {'이미지와 함께 전송' if self.config.send_with_image else '텍스트만 전송'}")
@@ -95,37 +110,50 @@ class DiscordAutoBot(discord.Client):
             print(f"❌ 스케줄러 오류: {e}")
     
     async def send_auto_message(self) -> bool:
-        """자동 메시지 전송"""
-        try:
-            channel = self.get_channel(int(self.config.channel_id))
-            if not channel:
-                print(f"❌ 채널을 찾을 수 없습니다: {self.config.channel_id}")
-                return False
-            
-            # 이미지와 함께 보내기 설정 확인
-            if self.config.send_with_image and self.config.image_path:
-                if os.path.exists(self.config.image_path):
-                    file = discord.File(self.config.image_path)
-                    await channel.send(self.config.message_content, file=file)
-                    print(f"📨 메시지+이미지 전송 완료")
+        """자동 메시지 전송 - 여러 채널에 순차 전송"""
+        success_count = 0
+        total_channels = len(self.config.channel_ids)
+        
+        for i, channel_id_str in enumerate(self.config.channel_ids):
+            if not channel_id_str or channel_id_str.strip() == "":
+                continue
+                
+            try:
+                channel_id = int(channel_id_str)
+                channel = self.get_channel(channel_id)
+                
+                if not channel:
+                    print(f"❌ 채널을 찾을 수 없습니다: {channel_id} ({i+1}/{total_channels})")
+                    continue
+                
+                # 이미지와 함께 보내기 설정 확인
+                if self.config.send_with_image and self.config.image_path:
+                    if os.path.exists(self.config.image_path):
+                        file = discord.File(self.config.image_path)
+                        await channel.send(self.config.message_content, file=file)
+                        print(f"📨 메시지+이미지 전송 완료: #{channel.name} ({i+1}/{total_channels})")
+                    else:
+                        await channel.send(self.config.message_content)
+                        print(f"📨 메시지 전송 완료 (이미지 없음): #{channel.name} ({i+1}/{total_channels})")
                 else:
+                    # 텍스트만 전송
                     await channel.send(self.config.message_content)
-                    print(f"📨 메시지 전송 완료 (이미지 없음)")
-            else:
-                # 텍스트만 전송
-                await channel.send(self.config.message_content)
-                print(f"📨 메시지 전송 완료")
-            
+                    print(f"📨 메시지 전송 완료: #{channel.name} ({i+1}/{total_channels})")
+                
+                success_count += 1
+                
+            except ValueError:
+                print(f"❌ 잘못된 채널 ID 형식: {channel_id_str} ({i+1}/{total_channels})")
+                continue
+            except Exception as e:
+                print(f"❌ 채널 전송 실패: {channel_id_str} - {e} ({i+1}/{total_channels})")
+                continue
+        
+        if success_count > 0:
+            print(f"✅ 총 {success_count}/{total_channels} 채널에 메시지 전송 성공")
             return True
-            
-        except discord.HTTPException as e:
-            print(f"❌ HTTP 오류: {e}")
-            return False
-        except discord.Forbidden:
-            print("❌ 권한 없음: 메시지 전송 권한이 필요합니다")
-            return False
-        except Exception as e:
-            print(f"❌ 전송 오류: {e}")
+        else:
+            print(f"❌ 모든 채널에 메시지 전송 실패")
             return False
     
     async def update_config(self, **kwargs):
