@@ -26,7 +26,7 @@ class DiscordAutoBot(discord.Client):
         self.is_running = False
         self.scheduler_task: Optional[asyncio.Task] = None
         self.next_send_time: Optional[datetime] = None
-        self._loop = loop or asyncio.get_event_loop()
+        self._loop = loop  # 이벤트 루프는 나중에 설정
         
     async def on_ready(self):
         """봇이 준비되었을 때 실행"""
